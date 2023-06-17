@@ -9,3 +9,5 @@ void progress_bar(int curr, int tot, int bar_width = 69, double time_elapsed = -
 int get_action(FJML::MLP& agent, const FJML::Tensor& game, float epsilon);
 
 void print_game(const FJML::Tensor& game);
+
+float get_value(FJML::MLP& agent, const FJML::Tensor& game);

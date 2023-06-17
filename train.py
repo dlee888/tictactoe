@@ -2,11 +2,10 @@ import collections
 import os
 import random
 
-import torch
-import tqdm
-
 import game
 import model
+import torch
+import tqdm
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('Using device:', device)
@@ -46,15 +45,9 @@ def learn(agent: model.Model, replay_batch: list, gamma: float, criterion: torch
         predictions.append(prediction)
         target = prediction.clone().detach()
         with torch.no_grad():
-            actions = game.get_actions(next_game_state)
-            for i in range(9):
-                if i == action:
-                    target[action] = reward
-                    if not done:
-                        target[action] += gamma * \
-                            torch.max(agent(next_game_state))
-                elif i not in actions:
-                    target[i] = 0
+            target[action] = reward
+            if not done:
+                target[action] += gamma * torch.max(agent(next_game_state))
         targets.append(target)
     predictions = torch.stack(predictions).to(device)
     targets = torch.stack(targets).to(device)
@@ -102,4 +95,5 @@ if __name__ == '__main__':
     else:
         agent = model.Model()
     optimizer = torch.optim.Adam(agent.parameters(), lr=0.005)
-    train(agent, optimizer=optimizer, verbose=True, episodes=6969, gamma=0.99, batch_size=64)
+    train(agent, optimizer=optimizer, verbose=True,
+          episodes=6969, gamma=0.99, batch_size=64)

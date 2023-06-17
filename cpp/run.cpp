@@ -10,6 +10,7 @@ int main() {
     std::cout << "Playing against the agent. You are O, the agent is X." << std::endl;
     FJML::Tensor game = create_game();
     bool done = false;
+    float reward;
     while (!done) {
         print_game(game);
         std::cout << std::endl;
@@ -20,8 +21,12 @@ int main() {
             std::cout << "Invalid action. Enter your move (0-8): ";
             std::cin >> action;
         }
-        std::tie(game, std::ignore, done) = step(game, action);
+        std::tie(game, reward, done) = step(game, action);
         if (done) {
+            if (reward == 0.5) {
+                std::cout << "Draw!" << std::endl;
+                return 0;
+            }
             std::cout << "You win!" << std::endl;
             return 0;
         }
@@ -30,8 +35,12 @@ int main() {
         std::cout << model.run(game) << std::endl;
         game.reshape({9});
         action = get_action(model, game, 0);
-        std::tie(game, std::ignore, done) = step(game, action);
+        std::tie(game, reward, done) = step(game, action);
         if (done) {
+            if (reward == 0.5) {
+                std::cout << "Draw!" << std::endl;
+                return 0;
+            }
             std::cout << "You lose!" << std::endl;
             return 0;
         }

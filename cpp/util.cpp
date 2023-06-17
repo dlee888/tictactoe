@@ -54,3 +54,16 @@ void print_game(const FJML::Tensor& game) {
         }
     }
 }
+
+float get_value(FJML::MLP& agent, const FJML::Tensor& game) {
+    FJML::Tensor game_copy = game;
+    game_copy.reshape({1, 9});
+    FJML::Tensor q_values = agent.run(game_copy);
+    float max_q = -1;
+    for (int i = 0; i < 9; i++) {
+        if (game_copy.at(0, i) == 0 && q_values.at(0, i) > max_q) {
+            max_q = q_values.at(0, i);
+        }
+    }
+    return max_q;
+}

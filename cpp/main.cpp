@@ -39,17 +39,19 @@ void train(FJML::MLP& agent, std::deque<std::tuple<FJML::Tensor, int, int, FJML:
         std::tuple<FJML::Tensor, int, int, FJML::Tensor, bool>& sample = memory[index];
         FJML::Tensor game = std::get<0>(sample);
         int action = std::get<1>(sample);
-        int reward = std::get<2>(sample);
+        float reward = std::get<2>(sample);
         FJML::Tensor new_game = std::get<3>(sample);
         bool done = std::get<4>(sample);
         game.reshape({1, 9});
         new_game.reshape({1, 9});
         FJML::Tensor q_values = agent.run(game);
         q_values.reshape({9});
-        FJML::Tensor new_q_values = agent.run(new_game);
         float target = reward;
         if (!done) {
-            target += gamma * FJML::LinAlg::max(new_q_values);
+            target += gamma * -get_value(agent, new_game);
+        }
+        if (rand() % 10000 == 0) {
+            std::cout << game << " " << new_game << " " << reward << " " << target << std::endl;
         }
         q_values.at(action) = target;
         game.reshape({9});
@@ -79,8 +81,12 @@ void run_training(FJML::MLP& agent, int episodes, int max_memory = 100000, float
 int main() {
     srand(time(NULL));
     FJML::MLP agent({new FJML::Layers::Dense(9, 32, FJML::Activations::relu),
-                     new FJML::Layers::Dense(32, 64, FJML::Activations::relu),
-                     new FJML::Layers::Dense(64, 9, FJML::Activations::sigmoid)},
+                     new FJML::Layers::Dense(32, 64, FJML::Activations::tanh),
+                     new FJML::Layers::Dense(64, 9, FJML::Activations::tanh)},
                     FJML::Loss::mse, new FJML::Optimizers::Adam(0.005));
-    run_training(agent, 6969);
+    double epsilon = 1.0;
+    agent.load("model.fjml");
+    agent.set_optimizer(new FJML::Optimizers::Adam(0.001));
+    epsilon = 0.1;
+    run_training(agent, 50000, 100000, epsilon, 0.999, 0.05, 0.995, 64);
 }
