@@ -102,4 +102,4 @@ if __name__ == '__main__':
     else:
         agent = model.Model()
     optimizer = torch.optim.Adam(agent.parameters(), lr=0.005)
-    train(agent, optimizer=optimizer, verbose=True, episodes=6969, gamma=0.9, batch_size=256, epsilon_decay=0.9995)
+    train(agent, optimizer=optimizer, verbose=True, episodes=6969, gamma=0.99, batch_size=64)

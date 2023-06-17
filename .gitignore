@@ -1,2 +1,6 @@
 __pycache__
 model.pt
+
+*.o
+run
+main
