@@ -11,26 +11,26 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('Using device:', device)
 
 
-def get_action(agent: model.Model, game_state: torch.Tensor, epsilon: float) -> int:
-    actions = game.get_actions(game_state)
+def get_qvals(agent: model.Model, game_state: torch.Tensor, actions: list) -> torch.Tensor:
+    return torch.tensor([agent(torch.vstack((game_state, torch.nn.functional.one_hot(torch.tensor(action), 9)))) for action in actions])
+
+
+def get_action(q_vals: torch.Tensor, actions: list[int], epsilon: float) -> int:
     if random.random() < epsilon:
         return random.choice(actions)
-    predictions = agent(game_state)
-    best_action = actions[0]
-    for action in actions:
-        if predictions[action] > predictions[best_action]:
-            best_action = action
-    return best_action
+    return actions[torch.argmax(q_vals).item()]
 
 
 def run_episode(agent: model.Model, replay_buffer: collections.deque, epsilon: float) -> None:
     game_state = game.create_game()
     done = False
     while not done:
-        action = get_action(agent, game_state, epsilon)
+        actions = game.get_actions(game_state)
+        q_vals = get_qvals(agent, game_state, actions)
+        action = get_action(q_vals, actions, epsilon)
         next_game_state, reward, done = game.step(game_state, action)
         replay_buffer.append(
-            (game_state, action, reward, next_game_state, done))
+            (game_state, action, reward, done))
         game_state = next_game_state
 
 
@@ -40,20 +40,22 @@ def learn(agent: model.Model, replay_batch: list, gamma: float, criterion: torch
     """
     predictions = []
     targets = []
-    for game_state, action, reward, next_game_state, done in replay_batch:
-        prediction = agent(game_state)
+    for game_state, action, reward, done in replay_batch:
+        prediction = agent(torch.vstack((game_state, torch.nn.functional.one_hot(torch.tensor(action), 9))))
         predictions.append(prediction)
-        target = prediction.clone().detach()
-        with torch.no_grad():
-            target[action] = reward
-            if not done:
-                target[action] += gamma * torch.max(agent(next_game_state))
-        targets.append(target)
-    predictions = torch.stack(predictions).to(device)
-    targets = torch.stack(targets).to(device)
+        next_game_state, reward, done = game.step(game_state, action)
+        if not done:
+            next_actions = game.get_actions(next_game_state)
+            next_q_vals = get_qvals(agent, next_game_state, next_actions)
+            reward = reward - gamma * torch.max(next_q_vals).item()
+        targets.append(reward)
+    predictions = torch.stack(predictions).to(device).reshape((len(predictions),))
+    targets = torch.tensor(targets, requires_grad=True).to(device).reshape((len(predictions),))
     # print(predictions, targets)
     loss = criterion(predictions, targets)
     loss.backward()
+    # print(list(agent.parameters()))
+    # print([x.grad for x in agent.parameters()])
     optimizer.step()
 
 
@@ -78,6 +80,8 @@ def train(agent: model.Model, *,
     :param verbose: Whether to print out information about the training.
     """
     replay_buffer = collections.deque(maxlen=max_memory)
+    for _ in range(5):
+        run_episode(agent, replay_buffer, epsilon)
     for _ in range(episodes) if not verbose else tqdm.trange(episodes):
         run_episode(agent, replay_buffer, epsilon)
         epsilon = max(epsilon * epsilon_decay, epsilon_min)
@@ -89,11 +93,11 @@ def train(agent: model.Model, *,
 
 
 if __name__ == '__main__':
-    if 'model.pt' in os.listdir():
+    if 'model.pt' in os.listdir() and False:
         print('Loading model from model.pt')
         agent = torch.load('model.pt')
     else:
         agent = model.Model()
-    optimizer = torch.optim.Adam(agent.parameters(), lr=0.005)
+    optimizer = torch.optim.SGD(agent.parameters(), lr=0.05)
     train(agent, optimizer=optimizer, verbose=True,
-          episodes=6969, gamma=0.99, batch_size=64)
+          episodes=10, epsilon_decay=0.99, gamma=0.99, batch_size=64)

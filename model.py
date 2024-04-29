@@ -26,12 +26,19 @@ class Model(torch.nn.Module):
 
     def __init__(self):
         super(Model, self).__init__()
-        self.fc1 = torch.nn.Linear(9, 32)
-        self.fc2 = torch.nn.Linear(32, 64)
-        self.fc3 = torch.nn.Linear(64, 9)
+        self.fc1 = torch.nn.Linear(18, 32)
+        # self.fc2 = torch.nn.Linear(32, 32)
+        self.fc3 = torch.nn.Linear(32, 1)
+        # torch.nn.init.zeros_(self.fc1.weight)
+        # torch.nn.init.zeros_(self.fc2.weight)
+        torch.nn.init.zeros_(self.fc3.weight)
+        # torch.nn.init.zeros_(self.fc1.bias)
+        # torch.nn.init.zeros_(self.fc2.bias)
+        torch.nn.init.zeros_(self.fc3.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.sigmoid(self.fc3(x))
+        x = torch.reshape(x, (1, 18))
+        x = F.tanh(self.fc1(x))
+        # x = F.sigmoid(self.fc2(x))
+        x = F.tanh(self.fc3(x))
         return x

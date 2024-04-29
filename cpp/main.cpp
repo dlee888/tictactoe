@@ -80,13 +80,13 @@ void run_training(FJML::MLP& agent, int episodes, int max_memory = 100000, float
 
 int main() {
     srand(time(NULL));
-    FJML::MLP agent({new FJML::Layers::Dense(9, 32, FJML::Activations::relu),
+    FJML::MLP agent({new FJML::Layers::Dense(18, 32, FJML::Activations::relu),
                      new FJML::Layers::Dense(32, 64, FJML::Activations::tanh),
                      new FJML::Layers::Dense(64, 9, FJML::Activations::tanh)},
                     FJML::Loss::mse, new FJML::Optimizers::Adam(0.005));
     double epsilon = 1.0;
-    agent.load("model.fjml");
-    agent.set_optimizer(new FJML::Optimizers::Adam(0.001));
-    epsilon = 0.1;
+    // agent.load("model.fjml");
+    // agent.set_optimizer(new FJML::Optimizers::Adam(0.001));
+    // epsilon = 0.1;
     run_training(agent, 50000, 100000, epsilon, 0.999, 0.05, 0.995, 64);
 }

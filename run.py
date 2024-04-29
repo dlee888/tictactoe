@@ -17,7 +17,9 @@ if __name__ == '__main__':
         if done:
             break
         print('Agent\'s turn.')
-        print(agent(state))
-        action = train.get_action(agent, state, 0)
+        actions = game.get_actions(state)
+        q_vals = train.get_qvals(agent, state, actions)
+        print(actions, q_vals)
+        action = actions[torch.argmax(q_vals).item()]
         state, reward, done = game.step(state, action)
         print(action, state)

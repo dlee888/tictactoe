@@ -10,23 +10,23 @@ def create_game() -> torch.Tensor:
     return torch.zeros(9)
 
 
-def is_game_over(game_state: torch.Tensor) -> bool:
+def is_game_over(game_state: torch.Tensor) -> int:
     """
-    Returns True if the game is over, False otherwise.
+    Returns 1 if the game is won, 0 if it's not over, 2 if tie.
     """
     for i in range(3):
         if game_state[i] == game_state[i + 3] == game_state[i + 6] != 0:
-            return True
+            return 1 
         if game_state[3 * i] == game_state[3 * i + 1] == game_state[3 * i + 2] != 0:
-            return True
+            return 1
     if game_state[0] == game_state[4] == game_state[8] != 0:
-        return True
+        return 1
     if game_state[2] == game_state[4] == game_state[6] != 0:
-        return True
+        return 1
     for i in range(9):
         if game_state[i] == 0:
-            return False
-    return True
+            return 0
+    return 2
 
 
 def step(game_state: torch.Tensor, action: int) -> typing.Tuple[torch.Tensor, int, bool]:
@@ -38,8 +38,8 @@ def step(game_state: torch.Tensor, action: int) -> typing.Tuple[torch.Tensor, in
         raise ValueError('Invalid action')
     next_game_state[action] = 1
     next_game_state = next_game_state * -1
-    done = is_game_over(next_game_state)
-    return next_game_state, 1 if done else 0, done
+    joever = is_game_over(next_game_state)
+    return next_game_state, 1 if joever == 1 else 0, joever != 0
 
 
 def get_actions(game_state: torch.Tensor) -> typing.List[int]:
